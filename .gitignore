@@ -20,3 +20,4 @@ target/
 claude_config/
 .claude_config
 
+**/Cargo.lock
