@@ -1,9 +1,13 @@
+[workspace]
+
 [package]
 name = "apc_injection"
 version = "0.1.0"
 edition = "2021"
 authors = ["RedTeam Research"]
 description = "Educational APC injection technique demonstration"
+
+
 
 [dependencies]
 windows = { version = "0.54", features = [

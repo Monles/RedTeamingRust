@@ -6,7 +6,7 @@ members = [
     "ipc_payload_and_loader/ipc_loader",
     "remote_process_apc",
     "user_apc",
-    "kernel_apc",
+    "kernel_apc", "unsafe_APC_Injection",
 ]
 [package]
 name = "apc_injection"
