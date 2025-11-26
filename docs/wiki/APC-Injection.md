@@ -202,8 +202,47 @@ Information and conceptual overview of kernel APCs:
 
 ### 4. **Safe Alternatives** (`option_b/`, `option_c/`)
 
-- **Option B (DLL Loader):** Uses `rundll32.exe` to invoke DLL exports—avoids raw shellcode execution
-- **Option C (IPC):** Safe child process communication via stdio—entirely in user-mode, portable
+- **dll_payload_and_loader (DLL Loader):** Uses `rundll32.exe` to invoke DLL exports—avoids raw shellcode execution (See Figure 1)
+- **ipc_payload_and_loader (IPC):** Safe child process communication via stdio—entirely in user-mode, portable
+
+### dll_payload_and_loader
+
+![](../assets/01-dll-payload-x64-release.png)
+
+```
+dll_loader_windows_x86_64_release.exe (PID: 4368)
+    └─→ Process Create: rundll32.exe (PID: ???)
+           └─→ Load Image: payload_dll_windows_x86_64_release.dll
+                 └─→ Process Create: notepad.exe (PID: ???)
+```
+
+### How to See the Complete Picture
+
+1. Clear current filters or add additional filters:
+
+- Process Name is rundll32.exe
+- Process Name is notepad.exe
+
+2. Look for these specific operations:
+
+- Process Create events (creating rundll32.exe)
+- Load Image for payload_dll_windows_x86_64_release.dll
+- Process Create for notepad.exe
+
+3. Use Process Tree view:
+
+- Tools → Process Tree (Ctrl+T)
+- This shows parent-child process relationships
+
+#### Why So Many Registry Reads?
+
+The extensive registry access is normal Windows behavior:
+
+- Loading DLL search paths
+- Reading security policies
+- Checking compatibility settings
+- Looking up locale/language settings
+- Reading control set configurations
 
 ---
 
