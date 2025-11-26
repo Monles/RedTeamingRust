@@ -1,5 +1,5 @@
 [workspace]
 members = [
     "/Users/lesmon/Documents/Study-Tools/RedTeamingRust/src/apc_injection",
-    "/Users/lesmon/Documents/Study-Tools/RedTeamingRust/src/evasion_payload",
+    "/Users/lesmon/Documents/Study-Tools/RedTeamingRust/src/evasion_payload", "src/malware/rust-xworm",
 ]
