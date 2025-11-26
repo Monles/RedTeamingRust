@@ -37,8 +37,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "kernel_apc"
+version = "0.1.0"
+dependencies = [
+ "windows",
+]
+
+[[package]]
 name = "payload_dll"
 version = "0.1.0"
+
+[[package]]
+name = "remote_process_apc"
+version = "0.1.0"
+dependencies = [
+ "windows",
+]
+
+[[package]]
+name = "user_apc"
+version = "0.1.0"
+dependencies = [
+ "windows",
+]
 
 [[package]]
 name = "windows"

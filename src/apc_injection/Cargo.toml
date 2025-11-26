@@ -1,9 +1,12 @@
 [workspace]
 members = [
-    "option_b/payload_dll",
-    "option_b/dll_loader",
-    "option_c/ipc_payload",
-    "option_c/ipc_loader",
+    "dll_payload_and_loader/payload_dll",
+    "dll_payload_and_loader/dll_loader",
+    "ipc_payload_and_loader/ipc_payload",
+    "ipc_payload_and_loader/ipc_loader",
+    "remote_process_apc",
+    "user_apc",
+    "kernel_apc",
 ]
 [package]
 name = "apc_injection"
