@@ -1,6 +1,5 @@
 [workspace]
-members = [
-    "src/apc_injection",
+members = ["src/ASMI",
     "src/evasion_payload",
     "src/malware/rust-xworm",
 ]
