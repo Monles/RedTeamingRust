@@ -1,0 +1,29 @@
+[workspace]
+members = [
+    "dll_payload_and_loader/payload_dll",
+    "dll_payload_and_loader/dll_loader",
+    "ipc_payload_and_loader/ipc_payload",
+    "ipc_payload_and_loader/ipc_loader",
+    "remote_process_apc",
+    "user_apc",
+    "kernel_apc", "unsafe_APC_Injection",
+]
+[package]
+name = "apc_injection"
+version = "0.1.0"
+edition = "2021"
+authors = ["RedTeam Research"]
+description = "Educational APC injection technique demonstration"
+
+[dependencies]
+windows = { version = "0.54", features = [
+    "Win32_Foundation",
+    "Win32_System_Memory",
+    "Win32_System_Threading",
+] }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

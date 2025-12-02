@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "src/AMSI",
+    "src/Evasion Techniques/evasion_payload",
+    "src/malware/rust-xworm",
+]
