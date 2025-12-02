@@ -1,0 +1,12 @@
+[package]
+name = "AMSI_Benign"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+
+[dependencies]
+windows = { version = "0.58", features = [
+    "Win32_System_LibraryLoader",
+    "Win32_System_Memory",
+] }
