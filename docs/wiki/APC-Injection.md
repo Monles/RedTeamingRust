@@ -234,6 +234,12 @@ dll_loader_windows_x86_64_release.exe (PID: 4368)
 - Tools → Process Tree (Ctrl+T)
 - This shows parent-child process relationships
 
+### Current Status
+-  Loader is working - Process started, loaded system DLLs, created thread
+-  No errors visible - All operations show "SUCCESS"
+-  Thread creation - New activity at PID 5408 suggests subprocess spawning Next step: Check if notepad.exe is actually running:
+tasklist | findstr /i "notepad"
+
 #### Why So Many Registry Reads?
 
 The extensive registry access is normal Windows behavior:
